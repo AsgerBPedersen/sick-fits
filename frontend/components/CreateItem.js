@@ -19,7 +19,7 @@ const CREATE_ITEM_MUTATION = gql`
       description: $description
       price: $price
       image: $image
-      largeImage: $largeImage
+      largeimage: $largeImage
     ) {
       id
     }
@@ -46,7 +46,7 @@ class CreateItem extends Component {
     data.append('file', files[0]);
     data.append('upload_preset', 'sickfits');
 
-    const res = await fetch('https://api.cloudinary.com/v1_1/wesbostutorial/image/upload', {
+    const res = await fetch('https://api.cloudinary.com/v1_1/asge4899/image/upload', {
       method: 'POST',
       body: data,
     });
