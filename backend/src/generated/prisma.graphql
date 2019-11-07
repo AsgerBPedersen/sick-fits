@@ -1,5 +1,5 @@
 # source: https://eu1.prisma.sh/asger-pedersen/sicky-fits/dev
-# timestamp: Thu Oct 31 2019 11:48:12 GMT+0100 (GMT+01:00)
+# timestamp: Wed Nov 06 2019 11:08:40 GMT+0100 (GMT+01:00)
 
 type AggregateItem {
   count: Int!
@@ -862,4 +862,5 @@ input UserWhereInput {
 
 input UserWhereUniqueInput {
   id: ID
+  email: String
 }

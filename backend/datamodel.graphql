@@ -10,7 +10,7 @@ enum Permission {
 type User {
   id: ID! @id
   name: String!
-  email: String!
+  email: String! @unique
   password: String!
   resetToten: String
   resetTokenExpiry: Float
