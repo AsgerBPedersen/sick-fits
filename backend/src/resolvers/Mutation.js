@@ -2,16 +2,24 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { randomBytes } = require('crypto');
 const { promisify } = require('util');
+const { hasPermission } = require('../utils');
 
 const { transport, makeANiceEmail } = require('../mail');
 
 const Mutations = {
     async createItem(parent, args, ctx, info) {
+        if(!ctx.request.userId) {
+          throw new Error('You must be logged in to create an item.');
+        }
         
-        console.log(args);
         const item = await ctx.db.mutation.createItem(
           {
             data: {
+              user : {
+                connect : {
+                  id: ctx.request.userId
+                }
+              },
               ...args,
             },
           },
@@ -36,9 +44,17 @@ const Mutations = {
    
     },
     async deleteItem(parent, args, ctx, info) {
+
       const where = { id: args.id };
       
-      const item = await ctx.db.query.item({ where }, `{ id title }`);
+      const item = await ctx.db.query.item({ where }, `{ id title user { id } }`);
+
+      const ownsItem = item.user.id === ctx.request.userId;
+      const hasPerissions = ctx.request.user.permissions.some(permission => ['ADMIN', 'ITEMDELETE'].includes(permission));
+
+      if(!ownsItem || !hasPerissions) {
+        throw new Error('You dont have permissions to delete this item.');
+      }
 
       return ctx.db.mutation.deleteItem({ where }, info);
     },
@@ -71,7 +87,7 @@ const Mutations = {
       if(!user) {
         throw new Error(`No such user found for email ${email}`);
       }
-
+      console.log(user);
       const valid = await bcrypt.compare(password, user.password);
       if(!valid) {
         throw new Error('Invalid password');
@@ -122,7 +138,6 @@ const Mutations = {
           resetTokenExpiry_gte: Date.now() - 3600000
         }
       });
-      console.log(user);
       if(!user) {
         throw new Error(`This user is either invalid or expired`);
       }
@@ -146,6 +161,26 @@ const Mutations = {
       });
 
       return updatedUser;
+    },
+    async updatePermissions(parent, args, ctx, info) {
+      if(!ctx.request.userId) {
+        throw new Error('You must be logged in!')
+      }
+      
+      const currentUser = await ctx.db.query.user( { where : { id : ctx.request.userId } }, info );
+      console.log(currentUser);
+
+      hasPermission(currentUser, ['ADMIN', 'PERMISSIONUPDATE']);
+      return ctx.db.mutation.updateUser({
+        data: {
+          permissions: {
+            set: args.permissions
+          }
+        },
+        where: {
+          id: args.userId
+        },
+      }, info)
     }
 };
 
