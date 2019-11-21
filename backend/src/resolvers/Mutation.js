@@ -181,6 +181,54 @@ const Mutations = {
           id: args.userId
         },
       }, info)
+    },
+    async addToCart(parent, args, ctx, info) {
+      const {userId} = ctx.request;
+      if(!ctx.request.userId) {
+        throw new Error('You must be logged in!')
+      }
+
+      const [existingCartItem] = await ctx.db.query.cartItems({
+        where: {
+          user: { id: userId},
+          item: {id: args.id}
+        }
+      });
+
+      if(existingCartItem) {
+        return ctx.db.mutation.updateCartItem({
+          where: {id: existingCartItem.id},
+          data: {quantity: existingCartItem.quantity + 1}
+        });
+      }
+
+      return ctx.db.mutation.createCartItem({
+        data: {
+          user: {
+            connect: {
+              id: userId
+              }
+            },
+            item: {
+              connect: {
+                id: args.id
+              }
+            }
+        }
+      }, info);
+    },
+    async removeFromCart(parent, args, ctx, info) {
+      const item = await ctx.db.query.cartItem({where : {id : args.id}}, `{ id, user {id}}`);
+
+      if(!item) { 
+        throw new Error('No item found.');
+      }
+
+      if(item.user.id !== ctx.request.userId) {
+        throw new Error('You do not own that item.');
+      }
+
+      return ctx.db.mutation.deleteCartItem({where: {id: args.id}}, info);
     }
 };
 
